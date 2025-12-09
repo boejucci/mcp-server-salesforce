@@ -1,6 +1,6 @@
 {
   "name": "@boejucci/mcp-server-salesforce",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Salesforce MCP server with report creation capabilities",
   "main": "dist/index.js",
   "type": "module",
