@@ -1,40 +1,18 @@
 {
-    "name": "@tsmztech/mcp-server-salesforce",
-    "version": "0.0.6",
-    "description": "A Salesforce connector MCP Server.",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "type": "module",
-    "bin": {
-        "salesforce-connector": "dist/index.js"
-    },
-    "files": [
-        "dist"
-    ],
-    "scripts": {
-        "build": "tsc && shx chmod +x dist/*.js",
-        "prepare": "npm run build",
-        "watch": "tsc --watch",
-        "test": "node --test"
-    },
-    "keywords": [
-        "mcp",
-        "salesforce",
-        "claude",
-        "ai"
-    ],
-    "author": "tsmztech",
-    "license": "MIT",
-    "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.24.3",
-        "@types/xml2js": "^0.4.14",
-        "dotenv": "16.4.7",
-        "jsforce": "^3.10.3",
-        "xml2js": "^0.6.2"
-    },
-    "devDependencies": {
-        "@types/node": "^24.3.0",
-        "shx": "^0.4.0",
-        "typescript": "^5.7.2"
-    }
+  "name": "@boejucci/mcp-server-salesforce",
+  "version": "1.0.0",
+  "description": "Salesforce MCP server with report creation capabilities",
+  "author": "Joe Bucci",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/boejucci/mcp-server-salesforce"
+  },
+  "homepage": "https://github.com/boejucci/mcp-server-salesforce",
+  "bugs": {
+    "url": "https://github.com/boejucci/mcp-server-salesforce/issues"
+  }, 
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build"
+  }
 }
