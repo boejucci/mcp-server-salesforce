@@ -26,7 +26,7 @@ import { EXECUTE_ANONYMOUS, handleExecuteAnonymous, ExecuteAnonymousArgs } from 
 import { MANAGE_DEBUG_LOGS, handleManageDebugLogs, ManageDebugLogsArgs } from "./tools/manageDebugLogs.js";
 import { createReport, createReportTool, CreateReportParams, ReportGrouping, ReportFilter, ReportChart } from './tools/report/createReport.js';
 import { listReportTypes, listReportTypesTool, describeReportType, describeReportTypeTool } from './tools/report/listReportTypes.js';
-import { readReport, readReportTool, listReports, listReportsTool } from './tools/report/readReport.js';
+import { readReport, readReportTool, listReports, listReportsTool, listReportFolders, listReportFoldersTool } from './tools/report/readReport.js';
 
 // Load environment variables (using dotenv 16.x which has no stdout tips)
 // MCP servers require stdout to contain ONLY JSON-RPC messages
@@ -47,9 +47,9 @@ const server = new Server(
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
-    SEARCH_OBJECTS, 
-    DESCRIBE_OBJECT, 
-    QUERY_RECORDS, 
+    SEARCH_OBJECTS,
+    DESCRIBE_OBJECT,
+    QUERY_RECORDS,
     AGGREGATE_QUERY,
     DML_RECORDS,
     MANAGE_OBJECT,
@@ -64,9 +64,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     MANAGE_DEBUG_LOGS,
     createReportTool,
     listReportTypesTool,
-    describeReportTypeTool, 
+    describeReportTypeTool,
     readReportTool,
-    listReportsTool
+    listReportsTool,
+    listReportFoldersTool
   ],
 }));
 
@@ -403,8 +404,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "salesforce_list_reports": {
         const listReportsArgs = args as Record<string, unknown>;
-        
-        const result = await listReports(conn, listReportsArgs.searchPattern as string | undefined);
+
+        const result = await listReports(
+          conn,
+          listReportsArgs.folder as string | undefined,
+          listReportsArgs.searchPattern as string | undefined
+        );
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(result, null, 2)
+          }]
+        };
+      }
+
+      case "salesforce_list_report_folders": {
+        const result = await listReportFolders(conn);
         return {
           content: [{
             type: "text",
