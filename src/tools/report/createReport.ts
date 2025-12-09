@@ -134,7 +134,7 @@ export async function createReport(
 
     // Build report API name
     const reportApiName = sanitizeApiName(params.name);
-    const folderPath = buildReportFolderPath(params.folder || 'Private Reports');
+    const folderPath = buildReportFolderPath(params.folder || 'unfiled$public');
     const fullName = `${folderPath}/${reportApiName}`;
 
     // Build report metadata
@@ -266,35 +266,65 @@ export const createReportTool = {
   name: 'salesforce_create_report',
   description: `Create a new Salesforce report using the Metadata API. Supports tabular, summary, and matrix formats with groupings, filters, and charts.
 
-IMPORTANT FIELD NAMING:
-- Use UPPERCASE for standard fields: OPPORTUNITY_NAME, AMOUNT, STAGE_NAME, CREATED_DATE, CLOSE_DATE
-- Use exact API names for custom fields: Type__c (will be automatically prefixed with object name)
-- Date range filters are automatically detected and converted to timeFrameFilter format
+IMPORTANT - REPORT TYPE:
+The reportType parameter can be:
+1. A standard object name: "Opportunity", "Account", "Contact", "Lead", "Case", etc.
+2. A custom report type API name (use salesforce_list_report_types or salesforce_describe_report_type to find these)
+
+IMPORTANT - FOLDER REQUIREMENT:
+Reports MUST be created in a folder. Common folders:
+- "unfiled$public" (default) - Public unfiled reports folder
+- "Private Reports" - Private user reports (not recommended for shared reports)
+- Custom folder names - Use salesforce_list_report_folders to find available folders
+
+IMPORTANT - FIELD NAMING:
+- For standard objects (Opportunity, Account, etc.): Use UPPERCASE field names
+  Examples: OPPORTUNITY_NAME, AMOUNT, STAGE_NAME, CREATED_DATE, CLOSE_DATE, ACCOUNT_NAME, INDUSTRY
+- For custom fields: Use exact API name with __c suffix (will be auto-prefixed with object name)
+  Example: Type__c becomes "Opportunity.Type__c" automatically
+- Date range filters: Two filters on same date field with greaterOrEqual/lessOrEqual are automatically converted to timeFrameFilter
+
+WORKFLOW TO CREATE A REPORT:
+1. First, use salesforce_describe_report_type to see available fields for your reportType
+2. Then use this tool with the correct field names from step 1
+3. If it fails, check the error message for field name issues
 
 EXAMPLES:
 1. MSP opportunities by month (2024-2025):
-   - columns: ["OPPORTUNITY_NAME", "AMOUNT", "STAGE_NAME"]
-   - filters: [
+   {
+     "name": "MSP Opportunities 2024-2025",
+     "reportType": "Opportunity",
+     "format": "SUMMARY",
+     "columns": ["OPPORTUNITY_NAME", "AMOUNT", "STAGE_NAME"],
+     "filters": [
        {"field": "Type__c", "operator": "equals", "value": "MSP"},
        {"field": "CREATED_DATE", "operator": "greaterOrEqual", "value": "2024-01-01"},
        {"field": "CREATED_DATE", "operator": "lessOrEqual", "value": "2025-12-31"}
-     ]
-   - groupingsDown: [{"field": "CREATED_DATE", "dateGranularity": "Month"}]
+     ],
+     "groupingsDown": [{"field": "CREATED_DATE", "dateGranularity": "Month"}],
+     "folder": "unfiled$public"
+   }
 
 2. Accounts by industry:
-   - reportType: "Account"
-   - columns: ["ACCOUNT_NAME", "INDUSTRY", "ANNUAL_REVENUE"]
-   - filters: [{"field": "INDUSTRY", "operator": "notEqual", "value": ""}]`,
+   {
+     "name": "Accounts by Industry",
+     "reportType": "Account",
+     "format": "SUMMARY",
+     "columns": ["ACCOUNT_NAME", "INDUSTRY", "ANNUAL_REVENUE"],
+     "filters": [{"field": "INDUSTRY", "operator": "notEqual", "value": ""}],
+     "groupingsDown": [{"field": "INDUSTRY"}],
+     "folder": "unfiled$public"
+   }`,
   inputSchema: {
     type: 'object',
     properties: {
       name: {
         type: 'string',
-        description: 'Name of the report'
+        description: 'Name of the report (will be sanitized for API name)'
       },
       reportType: {
         type: 'string',
-        description: 'Report type (e.g., "Opportunity", "Account", "Contact"). This determines which object the report is based on.'
+        description: 'Report type - either a standard object name (Opportunity, Account, Contact, Lead, Case, etc.) or a custom report type API name. Use salesforce_list_report_types to discover available report types.'
       },
       format: {
         type: 'string',
@@ -367,7 +397,7 @@ EXAMPLES:
       },
       folder: {
         type: 'string',
-        description: 'Report folder (default: "unfiled$public" for public reports)'
+        description: 'Report folder name. Default: "unfiled$public". Use salesforce_list_report_folders to see available folders. Common values: "unfiled$public", "Private Reports", or custom folder names.'
       },
       description: {
         type: 'string',

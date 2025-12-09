@@ -100,17 +100,34 @@ export class MetadataUtils {
   /**
    * List metadata of a specific type
    * @param metadataType - Type of metadata to list
+   * @param folder - Optional folder name (required for Report, Dashboard, EmailTemplate, Document)
    * @returns List of metadata
    */
-  async listMetadata(metadataType: string): Promise<any[]> {
+  async listMetadata(metadataType: string, folder?: string): Promise<any[]> {
     try {
       const result = await this.conn.metadata.list([
-        { type: metadataType, folder: null }
+        { type: metadataType, folder: folder || null }
       ]);
 
       return Array.isArray(result) ? result : [result];
     } catch (error) {
       throw new Error(`Failed to list ${metadataType}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * List all report folders
+   * @returns List of report folders
+   */
+  async listReportFolders(): Promise<any[]> {
+    try {
+      const result = await this.conn.metadata.list([
+        { type: 'ReportFolder' }
+      ]);
+
+      return Array.isArray(result) ? result : (result ? [result] : []);
+    } catch (error) {
+      throw new Error(`Failed to list ReportFolder: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }
