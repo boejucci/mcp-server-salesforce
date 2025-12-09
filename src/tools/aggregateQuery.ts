@@ -176,6 +176,45 @@ function validateOrderBy(orderBy: string | undefined, groupByFields: string[], s
   return { isValid: true };
 }
 
+// ✅ NEW: Helper function to get the field name that Salesforce uses in AggregateResult.get()
+// For relationship fields like "Account.Industry", Salesforce uses just "Industry"
+// For aliased aggregates like "COUNT(Id) MyCount", Salesforce uses "MyCount"
+// For non-aliased aggregates like "COUNT(Id)", Salesforce uses "expr0", "expr1", etc.
+function getAggregateResultFieldName(field: string, selectFields: string[], index: number): string {
+  const baseField = extractBaseField(field);
+  const fieldParts = field.trim().split(/\s+/);
+  
+  // If there's an alias (more than one word), use the last word as the field name
+  if (fieldParts.length > 1) {
+    return fieldParts[fieldParts.length - 1];
+  }
+  
+  // For relationship fields like "Account.Industry", use just the last part
+  if (baseField.includes('.')) {
+    const parts = baseField.split('.');
+    return parts[parts.length - 1];
+  }
+  
+  // For aggregate functions without alias, Salesforce uses expr0, expr1, etc.
+  if (isAggregateField(baseField)) {
+    // Count how many non-aliased aggregates come before this one
+    let exprIndex = 0;
+    for (let i = 0; i < index; i++) {
+      const prevField = selectFields[i];
+      const prevParts = prevField.trim().split(/\s+/);
+      const prevBase = extractBaseField(prevField);
+      // If it's an aggregate without alias
+      if (isAggregateField(prevBase) && prevParts.length === 1) {
+        exprIndex++;
+      }
+    }
+    return `expr${exprIndex}`;
+  }
+  
+  // For regular fields without relationship, use as-is
+  return baseField;
+}
+
 export async function handleAggregateQuery(conn: any, args: AggregateQueryArgs) {
   const { objectName, selectFields, groupByFields, whereClause, havingClause, orderBy, limit } = args;
 
@@ -227,24 +266,19 @@ export async function handleAggregateQuery(conn: any, args: AggregateQueryArgs) 
 
     const result = await conn.query(soql);
     
-    // Format the output
+    // ✅ FIXED: Format the output using proper AggregateResult.get() method
     const formattedRecords = result.records.map((record: any, index: number) => {
-      const recordStr = selectFields.map(field => {
+      const recordStr = selectFields.map((field, fieldIndex) => {
         const baseField = extractBaseField(field);
         const fieldParts = field.trim().split(/\s+/);
         const displayName = fieldParts.length > 1 ? fieldParts[fieldParts.length - 1] : baseField;
         
-        // Handle nested fields in results
-        if (baseField.includes('.')) {
-          const parts = baseField.split('.');
-          let value = record;
-          for (const part of parts) {
-            value = value?.[part];
-          }
-          return `    ${displayName}: ${value !== null && value !== undefined ? value : 'null'}`;
-        }
+        // ✅ FIX: Get the correct field name for AggregateResult.get()
+        const aggregateFieldName = getAggregateResultFieldName(field, selectFields, fieldIndex);
         
-        const value = record[baseField] || record[displayName];
+        // ✅ FIX: Use .get() method instead of bracket notation
+        const value = record.get ? record.get(aggregateFieldName) : record[aggregateFieldName];
+        
         return `    ${displayName}: ${value !== null && value !== undefined ? value : 'null'}`;
       }).join('\n');
       return `Group ${index + 1}:\n${recordStr}`;
@@ -279,4 +313,4 @@ export async function handleAggregateQuery(conn: any, args: AggregateQueryArgs) 
       isError: true,
     };
   }
-} 
+}
