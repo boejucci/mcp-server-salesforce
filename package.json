@@ -1,6 +1,6 @@
 {
   "name": "@boejucci/mcp-server-salesforce",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Salesforce MCP server with report creation capabilities",
   "author": "Joe Bucci",
   "repository": {
@@ -10,7 +10,7 @@
   "homepage": "https://github.com/boejucci/mcp-server-salesforce",
   "bugs": {
     "url": "https://github.com/boejucci/mcp-server-salesforce/issues"
-  }, 
+  },
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build"
